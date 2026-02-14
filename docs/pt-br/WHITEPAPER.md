@@ -45,16 +45,46 @@ Esta proposta é desenhada como um **Soft Fork**.
 - Nós antigos perceberão transações decoy como válidas para propagação, mas ignorarão os metadados do BIP 888.
 - Como decoys nunca são incluídos na blockchain permanente, não há risco de corrupção do livro-razão ou inchaço para participantes legados.
 
-# Análise de Atacante e Defesa
+# Modelagem de Ameaças (Threat Modeling)
+Para avaliar a eficácia do ESS, comparamos os seguintes cenários de segurança:
 
-### 4.1 Hierarquia de Segurança e Hashrate
-O **BIP 888** estabelece uma defesa multicamadas integrada à infraestrutura de Prova de Trabalho do Bitcoin.
-- **Fase Mempool (Ofuscação de Alvo):** Durante a propagação, o enxame introduz uma barreira de entropia que força o atacante a uma busca linear exaustiva. O protocolo garante que $T_{search} > T_{block}$.
-- **Fase Blockchain (Inércia Computacional):** Uma vez minerada, a transação é selada pelo Hashrate global. A reversão desta camada exige um dispêndio energético que anula a vantagem da computação quântica em ataques de reescrita de histórico.
-- **Evolução Dinâmica:** A segurança escala linearmente através do aumento da densidade de entropia ($N$), permitindo que a rede supere as melhorias do hardware quântico com custo computacional mínimo.
+1.  **Linha de Base (Sem Defesa)**: Transações revelam chaves públicas no mempool. Derivações de chave privada por CRQC em $T < 600s$ resultam em roubo bem-sucedido via transação conflitante (RBF).
+2.  **Escudo ESS (BIP 888)**: O mempool é populado com $N=10^5$ decoys. O adversário deve executar buscas de Grover através do enxame. O tempo de busca resultante $T_{search} \gg 600s$ garante que a transação seja confirmada antes da chave ser derivada.
+3.  **PQC Completo (Estado Futuro)**: Primitivas criptográficas são substituídas por assinaturas baseadas em reticulados/hash. Embora forneça resistência matemática absoluta, isso requer espaço de bloco significativo e uma grande revisão do consenso. O ESS serve como a ponte "Pré-Quântica".
 
-# Conclusão
-O **BIP 888 Entropic Swarm Shield** ativa a força de segurança coletiva inerente ao sistema de Prova de Trabalho do Bitcoin, propondo uma defesa ativa contra ameaças de computação avançada sem comprometer a eficiência de espaço da blockchain.
+# Questões em Aberto e Considerações
+- **Escalabilidade**: Um enxame de $10^5$ decoys gera overhead significativo. Propomos "Decoys Comprimidos" (enviando sementes em vez de dados completos) para minimizar o impacto em MB/s por nó.
+- **Políticas de Relay**: Nós Bitcoin usam filtros estritos de anti-spam e taxas. Decoys devem ser "economicamente plausíveis" para evitar serem podados pela política de relay antes de servirem ao seu propósito defensivo.
+- **Ataques Adaptativos**: Um adversário pode tentar distinguir decoys usando heurísticas (tempo de criação, padrões de taxa). O ESS deve garantir a "plausibilidade" dos decoys através do alinhamento estatístico com o comportamento real do mempool.
+- **Implementação de Grover**: O custo do Oráculo SHA-256 em um ambiente CRQC precisa de maior formalização para estabelecer margens de segurança precisas em cenários de hardware otimistas/pessimistas.
+
+# Implementação de Referência
+*(A ser adicionada)*
+A lógica de simulação da Fase 1 está sendo desenvolvida para demonstrar o limiar de entropia necessário para derrotar um adversário quântico simulado.
+
+# 6. Mecânicas Avançadas e Governança
+
+## 6.1 Indistinguibilidade de Decoy (Camuflagem Ativa)
+Para evitar filtragem heurística, os geradores de mapa caótico são parametrizados por estatísticas reais do mempool:
+- **Mimetismo de Taxa (Fee)**: Taxas de decoy são extraídas de uma distribuição $D_{fee}$ correspondendo à média móvel dos últimos $k$ blocos.
+- **Templating de Script**: Tipos de script de decoy (P2TR, P2WPKH) espelham as proporções observadas no mempool atual.
+- **Resultado**: Um adversário não pode simplesmente filtrar por "taxa baixa" ou "script não padrão" sem rejeitar uma porção significativa do tráfego legítimo.
+
+## 6.2 Política de Relay & Anti-Spam (Receiver-PoW)
+Para evitar inundação da rede, o ESS introduz um mecanismo de **Prova de Trabalho do Receptor**:
+- **Propagação Compacta**: Nós propagam mensagens `INV_ENTROPY` contendo apenas a Semente (32 bytes).
+- **Inflação Local**: O nó receptor realiza a expansão caótica localmente.
+- **Assimetria de Custo**: Validar o PoW da semente é barato; gerar o enxame completo é computacionalmente estritamente limitado. Isso desloca o custo de largura de banda da camada P2P da rede para CPU/Memória local, que é abundante comparada ao espaço de bloco.
+
+## 6.3 Segurança da Semente
+A semente $S$ é efêmera e derivada de:
+$$S = Hash(Block_{prev} \oplus Node_{nonce} \oplus TimeSlot)$$
+- **Escopo Local**: A semente é válida apenas para a janela de propagação atual.
+- **Imprevisibilidade**: Um atacante não pode pré-calcular o enxame sem comprometer a entropia PoW subjacente do bloco anterior ou o estado específico do nó.
+
+## 6.4 Governança e Ativação
+- **Soft Fork Necessário**: O ESS introduz uma nova regra de consenso para a propagação `INV_ENTROPY` e validação de Bloqueio Temporal.
+- **Compatibilidade Reversa**: Nós legados simplesmente ignorarão mensagens `INV_ENTROPY`. A proteção de enxame formará efetivamente uma rede overlay de nós atualizados que protegem a transação até que ela chegue a um minerador (que pode ou não ser atualizado, mas o atraso é alcançado durante a propagação).
 
 ---
 *"A autenticidade desta proposta reside na sua capacidade matemática de sobreviver ao caos."*
