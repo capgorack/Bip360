@@ -83,6 +83,19 @@ Para mitigar o overhead de largura de banda, o protocolo utiliza a função gera
 
 ---
 
+## 6. Análise de Entropia da Semente
+
+A segurança do sistema depende da imprevisibilidade da Semente $S$. Definimos a entropia da semente $H(S)$ como:
+
+$$H(S) = H(Bloco_{prev}) + H(Nonce_{node}) + H(TimeSlot)$$
+
+- **$H(Bloco_{prev})$**: Entropia fornecida pelo Proof-of-Work (~80 bits de segurança min-entropy).
+- **$H(Nonce_{node})$**: Entropia local do nó, desconhecida pelo atacante remoto.
+
+Para um atacante prever a distribuição exata do enxame em um tempo $t < 600s$, ele precisaria quebrar a função de hash SHA-256 para encontrar colisões que gerassem a mesma semente, o que é computacionalmente inviável mesmo para CRQC neste intervalo de tempo.
+
+---
+
 *"A autenticidade desta proposta reside na sua capacidade matemática de sobreviver ao caos."*
 
 ## 📜 Licenciamento

@@ -68,6 +68,30 @@ To evaluate the effectiveness of ESS, we compare the following security scenario
 *(To be added)*
 Phase 1 simulation logic is currently being developed to demonstrate the entropy threshold required to defeat a simulated growing quantum adversary.
 
+# 6. Advanced Mechanics & Governance
+
+## 6.1 Decoy Indistinguishability (Active Camouflage)
+To prevent heuristic filtering, the chaotic map generators are parameterized by real-time mempool statistics:
+- **Fee Mimicry**: Decoy fees are drawn from a distribution $D_{fee}$ matching the rolling average of the last $k$ blocks.
+- **Script Templating**: Decoy script types (P2TR, P2WPKH) mirror the ratios observed in the current mempool.
+- **Result**: An adversary cannot simply filter by "low fee" or "non-standard script" without rejecting a significant portion of legitimate traffic.
+
+## 6.2 Relay Policy & Anti-Spam (Receiver-PoW)
+To prevent network flooding, ESS introduces a **Receiver-Proof-of-Work** mechanism:
+- **Compact Propagation**: Nodes propagate `INV_ENTROPY` messages containing only the Seed (32 bytes).
+- **Local Inflation**: The receiving node performs the chaotic expansion locally.
+- **Cost Asymmetry**: Validating the seed's PoW is cheap; generating the full swarm is computationally strictly bounded. This shifts the bandwidth cost from the network P2P layer to local CPU/Memory, which is abundant compared to block space.
+
+## 6.3 Seed Security
+The seed $S$ is ephemeral and derived from:
+$$S = Hash(Block_{prev} \oplus Node_{nonce} \oplus TimeSlot)$$
+- **Local Scope**: The seed is valid only for the current propagation window.
+- **Unpredictability**: An attacker cannot pre-calculate the swarm without compromising the underlying PoW entropy of the previous block or the specific node's state.
+
+## 6.4 Governance & Activation
+- **Soft Fork Required**: ESS introduces a new consensus rule for `INV_ENTROPY` propagation and Time-Lock validation.
+- **Backward Compatibility**: Legacy nodes will simply ignore `INV_ENTROPY` messages. The swarm protection will effectively form an overlay network of upgraded nodes that shield the transaction until it reaches a miner (who may or may not be upgraded, but the delay is achieved during propagation).
+
 # Security Considerations
 - **Bandwidth:** The primary cost is network bandwidth. This can be mitigated by "Compact Decoys" where only the seed to generate the decoy is transmitted, and nodes regenerate the full decoy locally.
 - **DoS:** Care must be taken to ensure the decoy generation itself cannot be used as a vector for Denial of Service against validators.
